@@ -1,0 +1,49 @@
+﻿@model IEnumerable<AcademicClaimsPrototype.Models.Claim>
+
+@{
+    ViewData["Title"] = "My Claims";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>My Claims</h2>
+
+<p>
+    Pending: @ViewBag.PendingCount |
+    Approved: @ViewBag.ApprovedCount |
+    Rejected: @ViewBag.RejectedCount
+</p>
+
+<p><a asp-action="Create">Submit New Claim</a></p>
+
+<table border="1" cellpadding="5" style="width:100%">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Hours</th>
+            <th>Rate</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>File</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var claim in Model)
+        {
+            <tr>
+                <td>@claim.Date.ToShortDateString()</td>
+                <td>@claim.Description</td>
+                <td>@claim.Hours</td>
+                <td>@claim.Rate.ToString("C")</td>
+                <td>@claim.Amount.ToString("C")</td>
+                <td>@claim.Status</td>
+                <td>
+                    @if (!string.IsNullOrEmpty(claim.FilePath))
+                    {
+                        <a href="@claim.FilePath" target="_blank">View File</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,17 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+    var role = ViewBag.Role as string;
+    var email = ViewBag.Email as string;
+}
+
+<h2>Welcome, @email!</h2>
+<p>Your role is: <strong>@role</strong></p>
+
+@if (role == "Lecturer")
+{
+    <p><a asp-controller="Claims" asp-action="Index">Go to My Claims</a></p>
+}
+else if (role == "ProgrammeManager" || role == "ProgrammeCoordinator")
+{
+    <p><a asp-controller="Management" asp-action="Index">Manage Claims</a></p>
+}

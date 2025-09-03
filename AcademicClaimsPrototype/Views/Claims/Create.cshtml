@@ -1,0 +1,40 @@
+﻿@{
+    ViewData["Title"] = "Submit Claim";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Submit New Claim</h2>
+
+@if (ViewBag.Error != null)
+{
+    <p style="color:red">@ViewBag.Error</p>
+}
+
+<form method="post" asp-action="Create" enctype="multipart/form-data">
+    <div>
+        <label>Description:</label>
+        <input type="text" name="description" required />
+    </div>
+
+    <div>
+        <label>Hours:</label>
+        <input type="number" name="hours" step="0.1" min="0" required />
+    </div>
+
+    <div>
+        <label>Rate (per hour):</label>
+        <input type="number" name="rate" step="0.01" min="0" required />
+    </div>
+
+    <div>
+        <label>Date:</label>
+        <input type="date" name="date" required />
+    </div>
+
+    <div>
+        <label>Upload File (PDF, DOCX, XLSX only, max 5MB):</label>
+        <input type="file" name="file" required />
+    </div>
+
+    <button type="submit">Submit Claim</button>
+</form>
