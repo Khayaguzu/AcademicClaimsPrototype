@@ -5,17 +5,151 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>My Claims</h2>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+        margin: 0;
+        padding: 0;
+    }
 
-<p>
-    Pending: @ViewBag.PendingCount |
-    Approved: @ViewBag.ApprovedCount |
-    Rejected: @ViewBag.RejectedCount
-</p>
+    h2 {
+        font-size: 24px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 
-<p><a asp-action="Create">Submit New Claim</a></p>
+    /* Submit button */
+    .submit-btn {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        text-decoration: none;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        transition: background 0.3s ease;
+        float: right;
+    }
 
-<table border="1" cellpadding="5" style="width:100%">
+        .submit-btn:hover {
+            background: #0056b3;
+        }
+
+    /* Card container */
+    .stats-card {
+        margin: 20px auto;
+        max-width: 600px;
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        border-radius: 12px;
+        padding: 30px;
+        display: flex;
+        justify-content: space-around;
+        color: white;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+        .stats-card div {
+            font-size: 18px;
+        }
+
+        .stats-card span {
+            display: block;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+    /* Table styling */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        margin-top: 20px;
+    }
+
+    th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: left;
+        font-weight: bold;
+        color: #333;
+    }
+
+    td {
+        padding: 12px;
+        border-top: 1px solid #eee;
+        color: #555;
+    }
+
+    /* Status badges */
+    .status {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+        .status.Pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.Approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.Rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+    /* File link */
+    a.file-link {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+        a.file-link:hover {
+            text-decoration: underline;
+        }
+</style>
+
+<div>
+    <h2>
+        <i class="fas fa-file-invoice-dollar"></i> My Claims
+        <a class="submit-btn" asp-action="Create">+ Submit New Claim</a>
+    </h2>
+</div>
+
+<!-- Summary stats card -->
+<div class="stats-card">
+    <div>
+        <span>@ViewBag.PendingCount</span>
+        Pending
+    </div>
+    <div>
+        <span>@ViewBag.ApprovedCount</span>
+        Approved
+    </div>
+    <div>
+        <span>@ViewBag.RejectedCount</span>
+        Rejected
+    </div>
+</div>
+
+<!-- Claims table -->
+<table>
     <thead>
         <tr>
             <th>Date</th>
@@ -36,11 +170,13 @@
                 <td>@claim.Hours</td>
                 <td>@claim.Rate.ToString("C")</td>
                 <td>@claim.Amount.ToString("C")</td>
-                <td>@claim.Status</td>
+                <td>
+                    <span class="status @claim.Status">@claim.Status</span>
+                </td>
                 <td>
                     @if (!string.IsNullOrEmpty(claim.FilePath))
                     {
-                        <a href="@claim.FilePath" target="_blank">View File</a>
+                        <a href="@claim.FilePath" target="_blank" class="file-link">View File</a>
                     }
                 </td>
             </tr>

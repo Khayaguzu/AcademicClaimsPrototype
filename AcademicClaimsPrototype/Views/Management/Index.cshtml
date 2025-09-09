@@ -5,9 +5,103 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+        margin: 0;
+        padding: 0;
+    }
+
+    h2 {
+        font-size: 24px;
+        color: #333;
+        margin: 20px 0;
+    }
+
+    /* Table styling */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        margin-top: 20px;
+    }
+
+    th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: left;
+        font-weight: bold;
+        color: #333;
+    }
+
+    td {
+        padding: 12px;
+        border-top: 1px solid #eee;
+        color: #555;
+    }
+
+    /* Status badges */
+    .status {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+        .status.Pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.Approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.Rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+    /* Action buttons */
+    .action-btn {
+        border: none;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        margin-right: 5px;
+    }
+
+    .approve-btn {
+        background: #28a745;
+        color: #fff;
+    }
+
+        .approve-btn:hover {
+            background: #218838;
+        }
+
+    .reject-btn {
+        background: #dc3545;
+        color: #fff;
+    }
+
+        .reject-btn:hover {
+            background: #c82333;
+        }
+</style>
+
 <h2>Manage Lecturer Claims</h2>
 
-<table border="1" cellpadding="5">
+<table>
     <thead>
         <tr>
             <th>Lecturer</th>
@@ -24,17 +118,19 @@
                 <td>@claim.LecturerEmail</td>
                 <td>@claim.Date.ToShortDateString()</td>
                 <td>@claim.Description</td>
-                <td>@claim.Status</td>
+                <td>
+                    <span class="status @claim.Status">@claim.Status</span>
+                </td>
                 <td>
                     @if (claim.Status == AcademicClaimsPrototype.Models.ClaimStatus.Pending)
                     {
                         <form asp-action="Approve" method="post" style="display:inline">
                             <input type="hidden" name="id" value="@claim.Id" />
-                            <button type="submit">Approve</button>
+                            <button type="submit" class="action-btn approve-btn">Approve</button>
                         </form>
                         <form asp-action="Reject" method="post" style="display:inline">
                             <input type="hidden" name="id" value="@claim.Id" />
-                            <button type="submit">Reject</button>
+                            <button type="submit" class="action-btn reject-btn">Reject</button>
                         </form>
                     }
                 </td>
