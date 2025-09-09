@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-
 namespace AcademicClaimsPrototype.Filters
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
@@ -11,13 +10,11 @@ namespace AcademicClaimsPrototype.Filters
         public const string SessionEmail = "CurrentUserEmail";
         public const string SessionRole = "CurrentUserRole";
 
-
         public AuthorizeRoleAttribute(string rolesCsv)
         {
             _roles = rolesCsv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
-
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
@@ -25,21 +22,17 @@ namespace AcademicClaimsPrototype.Filters
             var email = http.Session.GetString(SessionEmail);
             var role = http.Session.GetString(SessionRole);
 
-
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(role))
             {
                 context.Result = new RedirectToActionResult("Login", "Account", null);
                 return;
             }
 
-
             if (_roles.Count > 0 && !_roles.Contains(role))
             {
-                // Not authorized for this role
                 context.Result = new RedirectToActionResult("Login", "Account", new { denied = true });
                 return;
             }
-
 
             await next();
         }

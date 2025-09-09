@@ -5,15 +5,142 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f6f9;
+        margin: 0;
+        padding: 0;
+    }
+
+    h2 {
+        text-align: center;
+        color: #333;
+        margin-top: 20px;
+    }
+
+    table {
+        width: 95%;
+        margin: 30px auto;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    th {
+        background: #f8f9fa;
+        padding: 14px;
+        text-align: left;
+        font-weight: bold;
+        color: #333;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    td {
+        padding: 12px;
+        border-top: 1px solid #eee;
+        color: #555;
+        vertical-align: middle;
+    }
+
+    tr:hover {
+        background-color: #f9fafc;
+    }
+
+    .status {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 15px;
+        font-size: 13px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+        .status.Pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.Approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.Rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+    .action-btn {
+        border: none;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        margin-right: 5px;
+    }
+
+    .approve-btn {
+        background: #28a745;
+        color: #fff;
+    }
+
+        .approve-btn:hover {
+            background: #218838;
+        }
+
+    .reject-btn {
+        background: #dc3545;
+        color: #fff;
+    }
+
+        .reject-btn:hover {
+            background: #c82333;
+        }
+
+    .reason-input {
+        margin-right: 5px;
+        padding: 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+
+    .view-doc-btn {
+        background: #007bff;
+        color: white;
+        padding: 7px 12px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+        transition: background 0.3s ease;
+        display: inline-block;
+    }
+
+        .view-doc-btn:hover {
+            background: #0056b3;
+        }
+
+    .no-doc {
+        color: #999;
+        font-style: italic;
+    }
+</style>
+
 <h2>Manage Lecturer Claims</h2>
 
-<table border="1" cellpadding="5">
+<table>
     <thead>
         <tr>
             <th>Lecturer</th>
             <th>Date</th>
             <th>Description</th>
+            <th>Document</th>
             <th>Status</th>
+            <th>Rejection Reason</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -24,17 +151,41 @@
                 <td>@claim.LecturerEmail</td>
                 <td>@claim.Date.ToShortDateString()</td>
                 <td>@claim.Description</td>
-                <td>@claim.Status</td>
+
                 <td>
-                    @if (claim.Status == AcademicClaimsPrototype.Models.ClaimStatus.Pending)
+                    @if (!string.IsNullOrEmpty(claim.DocumentPath))
+                    {
+                        <a href="@Url.Content(claim.DocumentPath)" target="_blank" class="view-doc-btn">View Document</a>
+                    }
+                    else
+                    {
+                        <span class="no-doc">No document</span>
+                    }
+                </td>
+
+                <td>
+                    <span class="status @claim.Status">@claim.Status</span>
+                </td>
+
+                <td>
+                    @if (claim.Status == ClaimStatus.Rejected)
+                    {
+                        @claim.RejectionReason
+                    }
+                </td>
+
+                <td>
+                    @if (claim.Status == ClaimStatus.Pending)
                     {
                         <form asp-action="Approve" method="post" style="display:inline">
                             <input type="hidden" name="id" value="@claim.Id" />
-                            <button type="submit">Approve</button>
+                            <button type="submit" class="action-btn approve-btn">Approve</button>
                         </form>
+
                         <form asp-action="Reject" method="post" style="display:inline">
                             <input type="hidden" name="id" value="@claim.Id" />
-                            <button type="submit">Reject</button>
+                            <input type="text" name="reason" placeholder="Reason" class="reason-input" required />
+                            <button type="submit" class="action-btn reject-btn">Reject</button>
                         </form>
                     }
                 </td>

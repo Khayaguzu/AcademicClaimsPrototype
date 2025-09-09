@@ -1,4 +1,6 @@
 ﻿using AcademicClaimsPrototype.Models;
+using System;
+using System.Collections.Generic;
 
 namespace AcademicClaimsPrototype.Services
 {
@@ -14,7 +16,11 @@ namespace AcademicClaimsPrototype.Services
                 Date = DateTime.Now.AddDays(-5),
                 Hours = 10,
                 Rate = 150,
-                Status = ClaimStatus.Pending
+                Status = ClaimStatus.Pending,
+                DocumentPath = "/uploads/marking-scripts.pdf",
+                ProcessedBy = null,
+                ProcessedAt = null,
+                RejectionReason = null
             },
             new Claim
             {
@@ -24,7 +30,11 @@ namespace AcademicClaimsPrototype.Services
                 Date = DateTime.Now.AddDays(-2),
                 Hours = 8,
                 Rate = 200,
-                Status = ClaimStatus.Approved
+                Status = ClaimStatus.Approved,
+                DocumentPath = "/uploads/invigilation.pdf",
+                ProcessedBy = "manager@uni.ac.za",
+                ProcessedAt = DateTime.Now.AddDays(-1),
+                RejectionReason = null
             },
             new Claim
             {
@@ -34,7 +44,11 @@ namespace AcademicClaimsPrototype.Services
                 Date = DateTime.Now.AddDays(-1),
                 Hours = 5,
                 Rate = 180,
-                Status = ClaimStatus.Rejected
+                Status = ClaimStatus.Rejected,
+                DocumentPath = "/uploads/test-paper.pdf",
+                ProcessedBy = "coordinator@uni.ac.za",
+                ProcessedAt = DateTime.Now,
+                RejectionReason = "Duplicate task submission"
             }
         };
 

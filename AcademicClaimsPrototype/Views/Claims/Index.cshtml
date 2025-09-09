@@ -5,17 +5,188 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>My Claims</h2>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f6f9;
+        margin: 0;
+        padding: 0;
+    }
 
-<p>
-    Pending: @ViewBag.PendingCount |
-    Approved: @ViewBag.ApprovedCount |
-    Rejected: @ViewBag.RejectedCount
-</p>
+    h2 {
+        text-align: center;
+        color: #333;
+        margin-top: 20px;
+        font-size: 26px;
+    }
 
-<p><a asp-action="Create">Submit New Claim</a></p>
+    .submit-btn {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        text-decoration: none;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        transition: background 0.3s ease;
+        float: right;
+        margin-top: -45px;
+        margin-right: 30px;
+    }
 
-<table border="1" cellpadding="5" style="width:100%">
+        .submit-btn:hover {
+            background: #0056b3;
+        }
+
+    .stats-card {
+        margin: 30px auto;
+        max-width: 600px;
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        border-radius: 12px;
+        padding: 25px 30px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        color: white;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+        .stats-card div {
+            font-size: 18px;
+        }
+
+        .stats-card span {
+            display: block;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+    table {
+        width: 95%;
+        margin: 30px auto;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    th {
+        background: #f8f9fa;
+        padding: 14px;
+        text-align: left;
+        font-weight: bold;
+        color: #333;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    td {
+        padding: 12px;
+        border-top: 1px solid #eee;
+        color: #555;
+        vertical-align: middle;
+    }
+
+    tr:hover {
+        background-color: #f9fafc;
+    }
+
+    .status {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 15px;
+        font-size: 13px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+        .status.Pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.Approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.Rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+    a.file-link {
+        background: #007bff;
+        color: #fff;
+        padding: 7px 12px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background 0.3s ease;
+    }
+
+        a.file-link:hover {
+            background: #0056b3;
+        }
+
+    .no-file {
+        color: #999;
+        font-style: italic;
+    }
+
+    .edit-btn {
+        background: #ffc107;
+        color: #000;
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background 0.3s ease;
+    }
+
+        .edit-btn:hover {
+            background: #e0a800;
+        }
+</style>
+
+<div>
+    <h2>My Claims</h2>
+    <a class="submit-btn" asp-action="Create">+ Submit New Claim</a>
+</div>
+
+<div class="stats-card">
+    <div>
+        <span>@ViewBag.PendingCount</span>
+        Pending
+    </div>
+    <div>
+        <span>@ViewBag.ApprovedCount</span>
+        Approved
+    </div>
+    <div>
+        <span>@ViewBag.RejectedCount</span>
+        Rejected
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin: 10px auto; width: 95%;">
+        @TempData["Success"]
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin: 10px auto; width: 95%;">
+        @TempData["Error"]
+    </div>
+}
+
+<table>
     <thead>
         <tr>
             <th>Date</th>
@@ -25,6 +196,7 @@
             <th>Amount</th>
             <th>Status</th>
             <th>File</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -36,11 +208,27 @@
                 <td>@claim.Hours</td>
                 <td>@claim.Rate.ToString("C")</td>
                 <td>@claim.Amount.ToString("C")</td>
-                <td>@claim.Status</td>
                 <td>
-                    @if (!string.IsNullOrEmpty(claim.FilePath))
+                    <span class="status @claim.Status">@claim.Status</span>
+                </td>
+                <td>
+                    @if (!string.IsNullOrEmpty(claim.DocumentPath))
                     {
-                        <a href="@claim.FilePath" target="_blank">View File</a>
+                        <a href="@claim.DocumentPath" target="_blank" class="file-link">View File</a>
+                    }
+                    else
+                    {
+                        <span class="no-file">No file</span>
+                    }
+                </td>
+                <td>
+                    @if (claim.Status == ClaimStatus.Pending)
+                    {
+                        <a href="@Url.Action("Edit", new { id = claim.Id })" class="edit-btn">Edit</a>
+                    }
+                    else
+                    {
+                        <span style="color: #999;">Cannot edit</span>
                     }
                 </td>
             </tr>
