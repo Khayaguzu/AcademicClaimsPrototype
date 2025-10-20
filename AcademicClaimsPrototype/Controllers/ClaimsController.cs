@@ -1,7 +1,8 @@
 ﻿using AcademicClaimsPrototype.Models;
 using AcademicClaimsPrototype.Filters;
-using AcademicClaimsPrototype.Services;
+using AcademicClaimsPrototype.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
@@ -11,7 +12,14 @@ namespace AcademicClaimsPrototype.Controllers
 {
     public class ClaimsController : Controller
     {
-        public IActionResult Index()
+        private readonly ApplicationDbContext _context;
+
+        public ClaimsController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<IActionResult> Index()
         {
             var userEmail = HttpContext.Session.GetString(AuthorizeRoleAttribute.SessionEmail);
             if (string.IsNullOrEmpty(userEmail))
@@ -19,10 +27,10 @@ namespace AcademicClaimsPrototype.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var userClaims = InMemoryStore.Claims
+            var userClaims = await _context.Claims
                 .Where(c => c.LecturerEmail == userEmail)
                 .OrderByDescending(c => c.Date)
-                .ToList();
+                .ToListAsync();
 
             ViewBag.PendingCount = userClaims.Count(c => c.Status == ClaimStatus.Pending);
             ViewBag.ApprovedCount = userClaims.Count(c => c.Status == ClaimStatus.Approved);
@@ -42,8 +50,27 @@ namespace AcademicClaimsPrototype.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Claim claim, IFormFile file)
         {
+            // Get user email from session first
+            var userEmail = HttpContext.Session.GetString(AuthorizeRoleAttribute.SessionEmail);
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Set the LecturerEmail before any validation
+            claim.LecturerEmail = userEmail;
+
+            // Check if file is provided
+            if (file == null || file.Length == 0)
+            {
+                ModelState.AddModelError("file", "Document is required");
+                return View(claim);
+            }
+
+            // Now validate the model (after setting LecturerEmail)
             if (!ModelState.IsValid)
             {
                 return View(claim);
@@ -51,65 +78,65 @@ namespace AcademicClaimsPrototype.Controllers
 
             try
             {
-                var userEmail = HttpContext.Session.GetString(AuthorizeRoleAttribute.SessionEmail);
-                if (string.IsNullOrEmpty(userEmail))
-                {
-                    return RedirectToAction("Login", "Account");
-                }
-
-                claim.LecturerEmail = userEmail;
                 claim.SubmittedAt = DateTime.UtcNow;
                 claim.Status = ClaimStatus.Pending;
 
-                // Handle file upload - make it optional but process if provided
-                if (file != null && file.Length > 0)
+                // File validation
+                if (file.Length > 10 * 1024 * 1024) // 10MB limit
                 {
-                    // File validation
-                    if (file.Length > 10 * 1024 * 1024)
-                    {
-                        ModelState.AddModelError("file", "File size must be less than 10MB");
-                        return View(claim);
-                    }
-
-                    // Ensure upload directory exists
-                    var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
-                    if (!Directory.Exists(uploadDir))
-                        Directory.CreateDirectory(uploadDir);
-
-                    // Save file with unique name
-                    var fileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(file.FileName);
-                    var filePath = Path.Combine(uploadDir, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(stream);
-                    }
-
-                    claim.DocumentPath = "/uploads/" + fileName;
-                    NotifyManagersAboutDocument(claim);
-                }
-                else
-                {
-                    // Document is optional, so no error if no file
-                    claim.DocumentPath = null;
+                    ModelState.AddModelError("file", "File size must be less than 10MB");
+                    return View(claim);
                 }
 
-                // Add claim to memory
-                InMemoryStore.Claims.Add(claim);
+                // Validate file extension
+                var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png" };
+                var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    ModelState.AddModelError("file", "Only PDF, Word, JPG, and PNG files are allowed");
+                    return View(claim);
+                }
+
+                // Ensure upload directory exists
+                var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
+                if (!Directory.Exists(uploadDir))
+                {
+                    Directory.CreateDirectory(uploadDir);
+                }
+
+                // Save file with unique name
+                var fileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(file.FileName);
+                var filePath = Path.Combine(uploadDir, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // Set the document path AFTER successful file upload
+                claim.DocumentPath = "/uploads/" + fileName;
+                NotifyManagersAboutDocument(claim);
+
+                // Add claim to database
+                _context.Claims.Add(claim);
+                await _context.SaveChangesAsync();
 
                 TempData["Success"] = "Claim submitted successfully!";
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
+                // Log the actual error for debugging
                 Console.WriteLine($"Error creating claim: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+
                 TempData["Error"] = "An error occurred while submitting the claim. Please try again.";
                 return View(claim);
             }
         }
 
         [HttpGet]
-        public IActionResult Edit(string id)
+        public async Task<IActionResult> Edit(string id)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -122,7 +149,7 @@ namespace AcademicClaimsPrototype.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var claim = InMemoryStore.Claims.FirstOrDefault(c => c.Id == id && c.LecturerEmail == userEmail);
+            var claim = await _context.Claims.FirstOrDefaultAsync(c => c.Id == id && c.LecturerEmail == userEmail);
 
             if (claim == null)
             {
@@ -140,20 +167,24 @@ namespace AcademicClaimsPrototype.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Claim updatedClaim, IFormFile file)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(updatedClaim);
-            }
-
             var userEmail = HttpContext.Session.GetString(AuthorizeRoleAttribute.SessionEmail);
             if (string.IsNullOrEmpty(userEmail))
             {
                 return RedirectToAction("Login", "Account");
             }
 
-            var existingClaim = InMemoryStore.Claims.FirstOrDefault(c => c.Id == updatedClaim.Id && c.LecturerEmail == userEmail);
+            // Set the LecturerEmail before validation
+            updatedClaim.LecturerEmail = userEmail;
+
+            if (!ModelState.IsValid)
+            {
+                return View(updatedClaim);
+            }
+
+            var existingClaim = await _context.Claims.FirstOrDefaultAsync(c => c.Id == updatedClaim.Id && c.LecturerEmail == userEmail);
 
             if (existingClaim == null)
             {
@@ -173,9 +204,25 @@ namespace AcademicClaimsPrototype.Controllers
             existingClaim.Rate = updatedClaim.Rate;
             existingClaim.Description = updatedClaim.Description ?? string.Empty;
 
-            // Handle file upload - optional update
+            // Handle file upload - required for editing too
             if (file != null && file.Length > 0)
             {
+                // File validation
+                if (file.Length > 10 * 1024 * 1024)
+                {
+                    ModelState.AddModelError("file", "File size must be less than 10MB");
+                    return View(updatedClaim);
+                }
+
+                // Validate file extension
+                var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png" };
+                var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    ModelState.AddModelError("file", "Only PDF, Word, JPG, and PNG files are allowed");
+                    return View(updatedClaim);
+                }
+
                 // Remove old file if exists
                 if (!string.IsNullOrEmpty(existingClaim.DocumentPath))
                 {
@@ -189,7 +236,9 @@ namespace AcademicClaimsPrototype.Controllers
                 // Save new file
                 var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
                 if (!Directory.Exists(uploadDir))
+                {
                     Directory.CreateDirectory(uploadDir);
+                }
 
                 var fileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(file.FileName);
                 var filePath = Path.Combine(uploadDir, fileName);
@@ -202,6 +251,13 @@ namespace AcademicClaimsPrototype.Controllers
                 existingClaim.DocumentPath = "/uploads/" + fileName;
                 NotifyManagersAboutDocument(existingClaim, true);
             }
+            else
+            {
+                // If no new file is uploaded, keep the existing document path
+                existingClaim.DocumentPath = existingClaim.DocumentPath;
+            }
+
+            await _context.SaveChangesAsync();
 
             TempData["Success"] = "Claim updated successfully!";
             return RedirectToAction("Index");

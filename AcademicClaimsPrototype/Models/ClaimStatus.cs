@@ -1,10 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AcademicClaimsPrototype.Models
 {
     public class Claim
     {
+        [Key]
         public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        // Remove [Required] since we set it in controller
         public string LecturerEmail { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Date is required")]
@@ -22,15 +26,19 @@ namespace AcademicClaimsPrototype.Models
         [Required(ErrorMessage = "Description is required")]
         public string Description { get; set; } = string.Empty;
 
-        // Make DocumentPath optional again to fix the issue
-        public string? DocumentPath { get; set; }
+        // Remove [Required] from DocumentPath - we'll handle it manually in controller
+        public string DocumentPath { get; set; } = string.Empty;
 
+        [Required]
         public ClaimStatus Status { get; set; } = ClaimStatus.Pending;
+
         public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+
         public string? ProcessedBy { get; set; }
         public DateTime? ProcessedAt { get; set; }
         public string? RejectionReason { get; set; }
 
+        [NotMapped]
         public double Amount => Hours * Rate;
     }
 

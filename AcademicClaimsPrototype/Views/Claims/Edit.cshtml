@@ -14,6 +14,16 @@
     </div>
 }
 
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div>@error.ErrorMessage</div>
+        }
+    </div>
+}
+
 <form asp-action="Edit" method="post" enctype="multipart/form-data">
     <input type="hidden" asp-for="Id" />
 
@@ -48,19 +58,23 @@
             <div>
                 <a href="@Model.DocumentPath" target="_blank">View Current Document</a>
             </div>
-            <small>If you want to change the document, upload a new file below</small>
+            <small>Upload a new file below to replace the current document</small>
         }
         else
         {
-            <div>No document attached</div>
+            <div style="color: red;">No document attached - document is required</div>
         }
     </div>
 
     <div>
-        <label for="file">Update Document (Optional):</label>
-        <input type="file" name="file" />
-        <small>Leave empty to keep current document. Upload new file to replace.</small>
+        <label for="file">Update Document *</label>
+        <input type="file" name="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+        <small>Required - Supported formats: PDF, Word, JPG, PNG (maximum 10MB)</small>
         <span style="color: red;" id="fileValidation"></span>
+        @if (ViewData.ModelState["file"]?.Errors?.Count > 0)
+        {
+            <span style="color: red;">@ViewData.ModelState["file"].Errors.First().ErrorMessage</span>
+        }
     </div>
 
     <div>
@@ -80,11 +94,8 @@
         margin-bottom: 5px;
     }
 
-        /* Only show asterisk for required fields */
-        label[for="Date"]:after,
-        label[for="Description"]:after,
-        label[for="Hours"]:after,
-        label[for="Rate"]:after {
+        /* Show asterisk for all required fields */
+        label:after {
             content: " *";
             color: red;
         }
@@ -100,13 +111,23 @@
         height: 100px;
         resize: vertical;
     }
+
+    .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        border: 1px solid #f5c6cb;
+    }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // File validation for edit form (only if file is provided)
+        // File validation for edit form
         var fileInput = document.querySelector('input[type="file"]');
         var fileValidation = document.getElementById('fileValidation');
+        var currentDocument = '@Model.DocumentPath';
 
         if (fileInput) {
             fileInput.addEventListener('change', function(e) {
@@ -117,12 +138,48 @@
                         fileValidation.textContent = 'File size must be less than 10MB';
                         e.target.value = '';
                     } else {
-                        fileValidation.textContent = '';
+                        // Validate file extension
+                        var allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+                        var fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                        if (!allowedExtensions.includes(fileExtension)) {
+                            fileValidation.textContent = 'Only PDF, Word, JPG, and PNG files are allowed';
+                            e.target.value = '';
+                        } else {
+                            fileValidation.textContent = '';
+                        }
                     }
-                } else {
-                    fileValidation.textContent = '';
                 }
             });
         }
+
+        // Form validation for edit
+        var form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            var file = fileInput.files[0];
+            var hasCurrentDocument = currentDocument && currentDocument.length > 0;
+
+            // If no current document and no new file, prevent submission
+            if (!hasCurrentDocument && !file) {
+                fileValidation.textContent = 'Document is required';
+                e.preventDefault();
+                return;
+            }
+
+            if (file) {
+                var fileSize = file.size / 1024 / 1024;
+                if (fileSize > 10) {
+                    fileValidation.textContent = 'File size must be less than 10MB';
+                    e.preventDefault();
+                }
+
+                // Validate file extension
+                var allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+                var fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                if (!allowedExtensions.includes(fileExtension)) {
+                    fileValidation.textContent = 'Only PDF, Word, JPG, and PNG files are allowed';
+                    e.preventDefault();
+                }
+            }
+        });
     });
 </script>

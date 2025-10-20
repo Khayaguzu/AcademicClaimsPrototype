@@ -1,26 +1,35 @@
 ﻿using AcademicClaimsPrototype.Filters;
 using AcademicClaimsPrototype.Models;
-using AcademicClaimsPrototype.Services;
+using AcademicClaimsPrototype.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace AcademicClaimsPrototype.Controllers
 {
     [AuthorizeRole("AcademicManager,ProgrammeCoordinator")]
     public class ManagementController : Controller
     {
-        public IActionResult Index()
+        private readonly ApplicationDbContext _context;
+
+        public ManagementController(ApplicationDbContext context)
         {
-            var allClaims = InMemoryStore.Claims
+            _context = context;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var allClaims = await _context.Claims
                 .OrderByDescending(c => c.Date)
-                .ToList();
+                .ToListAsync();
 
             return View(allClaims);
         }
 
         [HttpPost]
-        public IActionResult Approve(string id)
+        public async Task<IActionResult> Approve(string id)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -28,19 +37,21 @@ namespace AcademicClaimsPrototype.Controllers
                 return RedirectToAction("Index");
             }
 
-            var claim = InMemoryStore.Claims.FirstOrDefault(c => c.Id == id);
+            var claim = await _context.Claims.FirstOrDefaultAsync(c => c.Id == id);
             if (claim != null)
             {
                 claim.Status = ClaimStatus.Approved;
                 var processedBy = HttpContext.Session.GetString(AuthorizeRoleAttribute.SessionEmail);
                 claim.ProcessedBy = processedBy ?? "Unknown";
                 claim.ProcessedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
             }
             return RedirectToAction("Index");
         }
 
         [HttpPost]
-        public IActionResult Reject(string id, string reason)
+        public async Task<IActionResult> Reject(string id, string reason)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -48,7 +59,7 @@ namespace AcademicClaimsPrototype.Controllers
                 return RedirectToAction("Index");
             }
 
-            var claim = InMemoryStore.Claims.FirstOrDefault(c => c.Id == id);
+            var claim = await _context.Claims.FirstOrDefaultAsync(c => c.Id == id);
             if (claim != null)
             {
                 claim.Status = ClaimStatus.Rejected;
@@ -58,6 +69,8 @@ namespace AcademicClaimsPrototype.Controllers
                 claim.RejectionReason = string.IsNullOrWhiteSpace(reason)
                     ? "No reason provided"
                     : reason;
+
+                await _context.SaveChangesAsync();
             }
             return RedirectToAction("Index");
         }

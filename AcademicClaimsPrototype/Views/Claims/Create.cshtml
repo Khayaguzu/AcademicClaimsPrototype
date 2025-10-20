@@ -14,6 +14,16 @@
     </div>
 }
 
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div>@error.ErrorMessage</div>
+        }
+    </div>
+}
+
 <form asp-action="Create" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
 
@@ -27,7 +37,7 @@
     <div>
         <label asp-for="Description">Description *</label>
         <textarea asp-for="Description" required
-                  placeholder="Enter claim description (minimum 10 characters)..."></textarea>
+                  placeholder="Enter claim description..."></textarea>
         <span asp-validation-for="Description" style="color: red;"></span>
     </div>
 
@@ -41,15 +51,19 @@
     <div>
         <label asp-for="Rate">Rate per Hour *</label>
         <input asp-for="Rate" type="number" step="0.01" min="1" max="100000" required
-               placeholder="Enter hourly rate (minimum $1)" />
+               placeholder="Enter hourly rate in Rands (minimum R 1)" />
         <span asp-validation-for="Rate" style="color: red;"></span>
     </div>
 
     <div>
         <label for="file">Supporting Document *</label>
-        <input type="file" name="file" accept=".pdf,.doc,.docx,.jpg,.png" required />
-        <small>Supported formats: PDF, Word, JPG, PNG (Maximum 10MB)</small>
+        <input type="file" name="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required />
+        <small>Supported formats: PDF, Word, JPG, PNG (Required - maximum 10MB)</small>
         <span style="color: red;" id="fileValidation"></span>
+        @if (ViewData.ModelState["file"]?.Errors?.Count > 0)
+        {
+            <span style="color: red;">@ViewData.ModelState["file"].Errors.First().ErrorMessage</span>
+        }
     </div>
 
     <div>
@@ -74,12 +88,8 @@
         color: #333;
     }
 
-        /* Show asterisk for required fields including document */
-        label[for="Date"]:after,
-        label[for="Description"]:after,
-        label[for="Hours"]:after,
-        label[for="Rate"]:after,
-        label[for="file"]:after {
+        /* Show asterisk for all required fields */
+        label:after {
             content: " *";
             color: red;
         }
@@ -118,10 +128,20 @@
     .field-validation-error {
         font-size: 14px;
     }
+
+    .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        border: 1px solid #f5c6cb;
+    }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // File validation
         var fileInput = document.querySelector('input[type="file"]');
         var fileValidation = document.getElementById('fileValidation');
 
@@ -134,13 +154,51 @@
                         fileValidation.textContent = 'File size must be less than 10MB';
                         e.target.value = '';
                     } else {
-                        fileValidation.textContent = '';
+                        // Validate file extension
+                        var allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+                        var fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                        if (!allowedExtensions.includes(fileExtension)) {
+                            fileValidation.textContent = 'Only PDF, Word, JPG, and PNG files are allowed';
+                            e.target.value = '';
+                        } else {
+                            fileValidation.textContent = '';
+                        }
                     }
                 } else {
-                    fileValidation.textContent = 'A supporting document is required.';
+                    fileValidation.textContent = 'Document is required';
                 }
             });
         }
+
+        // Form validation before submit
+        var form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            var file = fileInput.files[0];
+            var isValid = true;
+
+            if (!file) {
+                fileValidation.textContent = 'Document is required';
+                isValid = false;
+            } else {
+                var fileSize = file.size / 1024 / 1024;
+                if (fileSize > 10) {
+                    fileValidation.textContent = 'File size must be less than 10MB';
+                    isValid = false;
+                }
+
+                // Validate file extension
+                var allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+                var fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                if (!allowedExtensions.includes(fileExtension)) {
+                    fileValidation.textContent = 'Only PDF, Word, JPG, and PNG files are allowed';
+                    isValid = false;
+                }
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
 
         // Calculate and display amount in real-time
         function calculateAmount() {
@@ -162,18 +220,24 @@
                 form.insertBefore(amountDisplay, lastDiv);
             }
 
-            amountDisplay.innerHTML = 'Total Amount: ' + amount.toLocaleString('en-US', {
-                style: 'currency',
-                currency: 'USD'
+            // Format as South African Rands
+            amountDisplay.innerHTML = 'Total Amount: R ' + amount.toLocaleString('en-ZA', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
             });
         }
 
         var hoursInput = document.querySelector('#Hours');
         var rateInput = document.querySelector('#Rate');
 
-        if (hoursInput) hoursInput.addEventListener('input', calculateAmount);
-        if (rateInput) rateInput.addEventListener('input', calculateAmount);
+        if (hoursInput) {
+            hoursInput.addEventListener('input', calculateAmount);
+        }
+        if (rateInput) {
+            rateInput.addEventListener('input', calculateAmount);
+        }
 
+        // Initial calculation
         calculateAmount();
     });
 </script>
