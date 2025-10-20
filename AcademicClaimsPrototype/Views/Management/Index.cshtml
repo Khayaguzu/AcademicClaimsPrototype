@@ -19,14 +19,40 @@
         margin-top: 20px;
     }
 
-    table {
+    .logout-btn-container {
+        text-align: right;
+        margin: 20px 30px 0 0;
+    }
+
+    .logout-btn {
+        background: #dc3545;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: background 0.3s ease;
+    }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+    .table-wrapper {
         width: 95%;
         margin: 30px auto;
-        border-collapse: collapse;
-        background: #fff;
+        background: #ffffff;
         border-radius: 12px;
-        overflow: hidden;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1000px;
     }
 
     th {
@@ -128,68 +154,81 @@
         color: #999;
         font-style: italic;
     }
+
+    .amount {
+        font-weight: bold;
+        color: #2c3e50;
+    }
 </style>
+
+<div class="logout-btn-container">
+    <a href="@Url.Action("Logout", "Account")" class="logout-btn">Logout</a>
+</div>
 
 <h2>Manage Lecturer Claims</h2>
 
-<table>
-    <thead>
-        <tr>
-            <th>Lecturer</th>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Document</th>
-            <th>Status</th>
-            <th>Rejection Reason</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var claim in Model)
-        {
+<div class="table-wrapper">
+    <table>
+        <thead>
             <tr>
-                <td>@claim.LecturerEmail</td>
-                <td>@claim.Date.ToShortDateString()</td>
-                <td>@claim.Description</td>
-
-                <td>
-                    @if (!string.IsNullOrEmpty(claim.DocumentPath))
-                    {
-                        <a href="@Url.Content(claim.DocumentPath)" target="_blank" class="view-doc-btn">View Document</a>
-                    }
-                    else
-                    {
-                        <span class="no-doc">No document</span>
-                    }
-                </td>
-
-                <td>
-                    <span class="status @claim.Status">@claim.Status</span>
-                </td>
-
-                <td>
-                    @if (claim.Status == ClaimStatus.Rejected)
-                    {
-                        @claim.RejectionReason
-                    }
-                </td>
-
-                <td>
-                    @if (claim.Status == ClaimStatus.Pending)
-                    {
-                        <form asp-action="Approve" method="post" style="display:inline">
-                            <input type="hidden" name="id" value="@claim.Id" />
-                            <button type="submit" class="action-btn approve-btn">Approve</button>
-                        </form>
-
-                        <form asp-action="Reject" method="post" style="display:inline">
-                            <input type="hidden" name="id" value="@claim.Id" />
-                            <input type="text" name="reason" placeholder="Reason" class="reason-input" required />
-                            <button type="submit" class="action-btn reject-btn">Reject</button>
-                        </form>
-                    }
-                </td>
+                <th>Lecturer</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Hours</th>
+                <th>Rate</th>
+                <th>Amount</th>
+                <th>Document</th>
+                <th>Status</th>
+                <th>Rejection Reason</th>
+                <th>Actions</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var claim in Model)
+            {
+                <tr>
+                    <td>@claim.LecturerEmail</td>
+                    <td>@claim.Date.ToShortDateString()</td>
+                    <td>@claim.Description</td>
+                    <td>@claim.Hours</td>
+                    <td>R @claim.Rate.ToString("N2")</td>
+                    <td class="amount">R @claim.Amount.ToString("N2")</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(claim.DocumentPath))
+                        {
+                            <a href="@Url.Content(claim.DocumentPath)" target="_blank" class="view-doc-btn">View Document</a>
+                        }
+                        else
+                        {
+                            <span class="no-doc">No document</span>
+                        }
+                    </td>
+                    <td>
+                        <span class="status @claim.Status">@claim.Status</span>
+                    </td>
+                    <td>
+                        @if (claim.Status == ClaimStatus.Rejected)
+                        {
+                            @claim.RejectionReason
+                        }
+                    </td>
+                    <td>
+                        @if (claim.Status == ClaimStatus.Pending)
+                        {
+                            <form asp-action="Approve" method="post" style="display:inline">
+                                <input type="hidden" name="id" value="@claim.Id" />
+                                <button type="submit" class="action-btn approve-btn">Approve</button>
+                            </form>
+
+                            <form asp-action="Reject" method="post" style="display:inline">
+                                <input type="hidden" name="id" value="@claim.Id" />
+                                <input type="text" name="reason" placeholder="Reason" class="reason-input" required />
+                                <button type="submit" class="action-btn reject-btn">Reject</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

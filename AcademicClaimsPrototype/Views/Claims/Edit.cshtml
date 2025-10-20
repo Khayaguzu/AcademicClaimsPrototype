@@ -18,26 +18,26 @@
     <input type="hidden" asp-for="Id" />
 
     <div>
-        <label asp-for="Date">Date:</label>
+        <label asp-for="Date">Date *</label>
         <input asp-for="Date" type="date" required />
         <span asp-validation-for="Date" style="color: red;"></span>
     </div>
 
     <div>
-        <label asp-for="Description">Description:</label>
+        <label asp-for="Description">Description *</label>
         <textarea asp-for="Description" required></textarea>
         <span asp-validation-for="Description" style="color: red;"></span>
     </div>
 
     <div>
-        <label asp-for="Hours">Hours:</label>
-        <input asp-for="Hours" type="number" step="0.5" min="0" max="1000" required />
+        <label asp-for="Hours">Hours *</label>
+        <input asp-for="Hours" type="number" step="0.5" min="0.5" max="1000" required />
         <span asp-validation-for="Hours" style="color: red;"></span>
     </div>
 
     <div>
-        <label asp-for="Rate">Rate per Hour:</label>
-        <input asp-for="Rate" type="number" step="0.01" min="0" max="100000" required />
+        <label asp-for="Rate">Rate per Hour *</label>
+        <input asp-for="Rate" type="number" step="0.01" min="1" max="100000" required />
         <span asp-validation-for="Rate" style="color: red;"></span>
     </div>
 
@@ -48,6 +48,7 @@
             <div>
                 <a href="@Model.DocumentPath" target="_blank">View Current Document</a>
             </div>
+            <small>If you want to change the document, upload a new file below</small>
         }
         else
         {
@@ -56,9 +57,10 @@
     </div>
 
     <div>
-        <label for="file">Update Document (optional):</label>
+        <label for="file">Update Document (Optional):</label>
         <input type="file" name="file" />
-        <small>Leave empty to keep current document</small>
+        <small>Leave empty to keep current document. Upload new file to replace.</small>
+        <span style="color: red;" id="fileValidation"></span>
     </div>
 
     <div>
@@ -78,6 +80,15 @@
         margin-bottom: 5px;
     }
 
+        /* Only show asterisk for required fields */
+        label[for="Date"]:after,
+        label[for="Description"]:after,
+        label[for="Hours"]:after,
+        label[for="Rate"]:after {
+            content: " *";
+            color: red;
+        }
+
     input, textarea {
         width: 100%;
         padding: 8px;
@@ -90,3 +101,28 @@
         resize: vertical;
     }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // File validation for edit form (only if file is provided)
+        var fileInput = document.querySelector('input[type="file"]');
+        var fileValidation = document.getElementById('fileValidation');
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                var file = e.target.files[0];
+                if (file) {
+                    var fileSize = file.size / 1024 / 1024;
+                    if (fileSize > 10) {
+                        fileValidation.textContent = 'File size must be less than 10MB';
+                        e.target.value = '';
+                    } else {
+                        fileValidation.textContent = '';
+                    }
+                } else {
+                    fileValidation.textContent = '';
+                }
+            });
+        }
+    });
+</script>

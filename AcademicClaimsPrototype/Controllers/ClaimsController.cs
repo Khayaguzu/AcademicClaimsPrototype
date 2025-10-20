@@ -42,7 +42,7 @@ namespace AcademicClaimsPrototype.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Claim claim, IFormFile? file)
+        public async Task<IActionResult> Create(Claim claim, IFormFile file)
         {
             if (!ModelState.IsValid)
             {
@@ -61,18 +61,22 @@ namespace AcademicClaimsPrototype.Controllers
                 claim.SubmittedAt = DateTime.UtcNow;
                 claim.Status = ClaimStatus.Pending;
 
+                // Handle file upload - make it optional but process if provided
                 if (file != null && file.Length > 0)
                 {
+                    // File validation
                     if (file.Length > 10 * 1024 * 1024)
                     {
                         ModelState.AddModelError("file", "File size must be less than 10MB");
                         return View(claim);
                     }
 
+                    // Ensure upload directory exists
                     var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
                     if (!Directory.Exists(uploadDir))
                         Directory.CreateDirectory(uploadDir);
 
+                    // Save file with unique name
                     var fileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(file.FileName);
                     var filePath = Path.Combine(uploadDir, fileName);
 
@@ -84,8 +88,15 @@ namespace AcademicClaimsPrototype.Controllers
                     claim.DocumentPath = "/uploads/" + fileName;
                     NotifyManagersAboutDocument(claim);
                 }
+                else
+                {
+                    // Document is optional, so no error if no file
+                    claim.DocumentPath = null;
+                }
 
+                // Add claim to memory
                 InMemoryStore.Claims.Add(claim);
+
                 TempData["Success"] = "Claim submitted successfully!";
                 return RedirectToAction("Index");
             }
@@ -129,12 +140,11 @@ namespace AcademicClaimsPrototype.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(Claim updatedClaim, IFormFile? file)
+        public async Task<IActionResult> Edit(Claim updatedClaim, IFormFile file)
         {
-            if (updatedClaim == null || string.IsNullOrEmpty(updatedClaim.Id))
+            if (!ModelState.IsValid)
             {
-                TempData["Error"] = "Invalid claim data.";
-                return RedirectToAction("Index");
+                return View(updatedClaim);
             }
 
             var userEmail = HttpContext.Session.GetString(AuthorizeRoleAttribute.SessionEmail);
@@ -157,13 +167,16 @@ namespace AcademicClaimsPrototype.Controllers
                 return RedirectToAction("Index");
             }
 
+            // Update claim details
             existingClaim.Date = updatedClaim.Date;
             existingClaim.Hours = updatedClaim.Hours;
             existingClaim.Rate = updatedClaim.Rate;
             existingClaim.Description = updatedClaim.Description ?? string.Empty;
 
+            // Handle file upload - optional update
             if (file != null && file.Length > 0)
             {
+                // Remove old file if exists
                 if (!string.IsNullOrEmpty(existingClaim.DocumentPath))
                 {
                     var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", existingClaim.DocumentPath.TrimStart('/'));
@@ -173,6 +186,7 @@ namespace AcademicClaimsPrototype.Controllers
                     }
                 }
 
+                // Save new file
                 var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
                 if (!Directory.Exists(uploadDir))
                     Directory.CreateDirectory(uploadDir);

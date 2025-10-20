@@ -150,11 +150,32 @@
         .edit-btn:hover {
             background: #e0a800;
         }
+
+    /* Additional logout button in page */
+    .page-logout-btn {
+        background: #dc3545;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        margin-left: 10px;
+        transition: background 0.3s ease;
+    }
+
+        .page-logout-btn:hover {
+            background: #c82333;
+        }
 </style>
 
 <div>
     <h2>My Claims</h2>
-    <a class="submit-btn" asp-action="Create">+ Submit New Claim</a>
+    <div style="float: right; margin-top: -45px;">
+        <a class="submit-btn" asp-action="Create">+ Submit New Claim</a>
+        <a href="@Url.Action("Logout", "Account")" class="page-logout-btn">Logout</a>
+    </div>
 </div>
 
 <div class="stats-card">
@@ -206,8 +227,8 @@
                 <td>@claim.Date.ToShortDateString()</td>
                 <td>@claim.Description</td>
                 <td>@claim.Hours</td>
-                <td>@claim.Rate.ToString("C")</td>
-                <td>@claim.Amount.ToString("C")</td>
+                <td>R @claim.Rate.ToString("N2")</td>
+                <td>R @claim.Amount.ToString("N2")</td>
                 <td>
                     <span class="status @claim.Status">@claim.Status</span>
                 </td>

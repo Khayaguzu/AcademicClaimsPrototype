@@ -18,37 +18,38 @@
     @Html.AntiForgeryToken()
 
     <div>
-        <label asp-for="Date">Date:</label>
+        <label asp-for="Date">Date *</label>
         <input asp-for="Date" type="date" required
                value="@DateTime.Now.ToString("yyyy-MM-dd")" />
         <span asp-validation-for="Date" style="color: red;"></span>
     </div>
 
     <div>
-        <label asp-for="Description">Description:</label>
+        <label asp-for="Description">Description *</label>
         <textarea asp-for="Description" required
-                  placeholder="Enter claim description..."></textarea>
+                  placeholder="Enter claim description (minimum 10 characters)..."></textarea>
         <span asp-validation-for="Description" style="color: red;"></span>
     </div>
 
     <div>
-        <label asp-for="Hours">Hours:</label>
-        <input asp-for="Hours" type="number" step="0.5" min="0" max="1000" required
-               placeholder="Enter hours worked" />
+        <label asp-for="Hours">Hours *</label>
+        <input asp-for="Hours" type="number" step="0.5" min="0.5" max="1000" required
+               placeholder="Enter hours worked (minimum 0.5 hours)" />
         <span asp-validation-for="Hours" style="color: red;"></span>
     </div>
 
     <div>
-        <label asp-for="Rate">Rate per Hour:</label>
-        <input asp-for="Rate" type="number" step="0.01" min="0" max="100000" required
-               placeholder="Enter hourly rate" />
+        <label asp-for="Rate">Rate per Hour *</label>
+        <input asp-for="Rate" type="number" step="0.01" min="1" max="100000" required
+               placeholder="Enter hourly rate (minimum $1)" />
         <span asp-validation-for="Rate" style="color: red;"></span>
     </div>
 
     <div>
-        <label for="file">Supporting Document (optional):</label>
-        <input type="file" name="file" accept=".pdf,.doc,.docx,.jpg,.png" />
-        <small>Supported formats: PDF, Word, JPG, PNG</small>
+        <label for="file">Supporting Document *</label>
+        <input type="file" name="file" accept=".pdf,.doc,.docx,.jpg,.png" required />
+        <small>Supported formats: PDF, Word, JPG, PNG (Maximum 10MB)</small>
+        <span style="color: red;" id="fileValidation"></span>
     </div>
 
     <div>
@@ -72,6 +73,16 @@
         margin-bottom: 5px;
         color: #333;
     }
+
+        /* Show asterisk for required fields including document */
+        label[for="Date"]:after,
+        label[for="Description"]:after,
+        label[for="Hours"]:after,
+        label[for="Rate"]:after,
+        label[for="file"]:after {
+            content: " *";
+            color: red;
+        }
 
     input[type="text"],
     input[type="number"],
@@ -109,19 +120,29 @@
     }
 </style>
 
-@section Scripts {
-    <script>
-        document.querySelector('input[type="file"]').addEventListener('change', function(e) {
-            var file = e.target.files[0];
-            if (file) {
-                var fileSize = file.size / 1024 / 1024;
-                if (fileSize > 10) {
-                    alert('File size must be less than 10MB');
-                    e.target.value = '';
-                }
-            }
-        });
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var fileInput = document.querySelector('input[type="file"]');
+        var fileValidation = document.getElementById('fileValidation');
 
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                var file = e.target.files[0];
+                if (file) {
+                    var fileSize = file.size / 1024 / 1024;
+                    if (fileSize > 10) {
+                        fileValidation.textContent = 'File size must be less than 10MB';
+                        e.target.value = '';
+                    } else {
+                        fileValidation.textContent = '';
+                    }
+                } else {
+                    fileValidation.textContent = 'A supporting document is required.';
+                }
+            });
+        }
+
+        // Calculate and display amount in real-time
         function calculateAmount() {
             var hours = parseFloat(document.querySelector('#Hours').value) || 0;
             var rate = parseFloat(document.querySelector('#Rate').value) || 0;
@@ -136,7 +157,9 @@
                 amountDisplay.style.backgroundColor = '#f8f9fa';
                 amountDisplay.style.borderRadius = '4px';
                 amountDisplay.style.fontWeight = 'bold';
-                document.querySelector('form').insertBefore(amountDisplay, document.querySelector('form div:last-child'));
+                var form = document.querySelector('form');
+                var lastDiv = form.querySelector('div:last-child');
+                form.insertBefore(amountDisplay, lastDiv);
             }
 
             amountDisplay.innerHTML = 'Total Amount: ' + amount.toLocaleString('en-US', {
@@ -145,10 +168,12 @@
             });
         }
 
-        document.querySelector('#Hours').addEventListener('input', calculateAmount);
-        document.querySelector('#Rate').addEventListener('input', calculateAmount);
+        var hoursInput = document.querySelector('#Hours');
+        var rateInput = document.querySelector('#Rate');
 
-        // Initial calculation
+        if (hoursInput) hoursInput.addEventListener('input', calculateAmount);
+        if (rateInput) rateInput.addEventListener('input', calculateAmount);
+
         calculateAmount();
-    </script>
-}
+    });
+</script>
