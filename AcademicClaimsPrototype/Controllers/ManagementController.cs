@@ -25,7 +25,19 @@ namespace AcademicClaimsPrototype.Controllers
                 .OrderByDescending(c => c.Date)
                 .ToListAsync();
 
-            return View(allClaims);
+            // Separate claims by status for organized display
+            var pendingClaims = allClaims.Where(c => c.Status == ClaimStatus.Pending).ToList();
+            var approvedClaims = allClaims.Where(c => c.Status == ClaimStatus.Approved).ToList();
+            var rejectedClaims = allClaims.Where(c => c.Status == ClaimStatus.Rejected).ToList();
+
+            ViewBag.PendingClaims = pendingClaims;
+            ViewBag.ApprovedClaims = approvedClaims;
+            ViewBag.RejectedClaims = rejectedClaims;
+            ViewBag.TotalPending = pendingClaims.Count;
+            ViewBag.TotalApproved = approvedClaims.Count;
+            ViewBag.TotalRejected = rejectedClaims.Count;
+
+            return View();
         }
 
         [HttpPost]
@@ -46,6 +58,7 @@ namespace AcademicClaimsPrototype.Controllers
                 claim.ProcessedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
+                TempData["Success"] = "Claim approved successfully!";
             }
             return RedirectToAction("Index");
         }
@@ -71,6 +84,7 @@ namespace AcademicClaimsPrototype.Controllers
                     : reason;
 
                 await _context.SaveChangesAsync();
+                TempData["Success"] = "Claim rejected successfully!";
             }
             return RedirectToAction("Index");
         }

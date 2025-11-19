@@ -1,13 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using AcademicClaimsPrototype.Models;
+using System;
 
 namespace AcademicClaimsPrototype.Data
 {
     public class ApplicationDbContext : DbContext
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-        {
-        }
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Claim> Claims { get; set; }
         public DbSet<User> Users { get; set; }
@@ -20,30 +19,63 @@ namespace AcademicClaimsPrototype.Data
             modelBuilder.Entity<User>()
                 .HasKey(u => u.Email);
 
-            // Configure email to be case-insensitive in the database
             modelBuilder.Entity<User>()
                 .Property(u => u.Email)
                 .HasConversion(
-                    v => v.ToLower(), // Convert to lowercase when storing
-                    v => v);          // Return as is when reading
+                    v => v.ToLower(),
+                    v => v
+                );
 
-            // Configure Claim entity - make fields required at database level
+            // Configure Claim entity
             modelBuilder.Entity<Claim>()
                 .Property(c => c.LecturerEmail)
-                .IsRequired(); // Database level requirement
+                .IsRequired();
 
             modelBuilder.Entity<Claim>()
                 .Property(c => c.DocumentPath)
-                .IsRequired(); // Database level requirement
+                .IsRequired();
 
-            // Seed initial data
+            // Seed initial users (including HR)
             modelBuilder.Entity<User>().HasData(
-                new User { Email = "lecturer1@uni.ac.za", Password = "123", Role = "Lecturer" },
-                new User { Email = "lecturer2@uni.ac.za", Password = "123", Role = "Lecturer" },
-                new User { Email = "manager@uni.ac.za", Password = "123", Role = "AcademicManager" },
-                new User { Email = "coordinator@uni.ac.za", Password = "123", Role = "ProgrammeCoordinator" }
+                new User
+                {
+                    Email = "lecturer1@uni.ac.za",
+                    Password = "123",
+                    Role = "Lecturer",
+                    FullName = "Lecturer One",
+                    PhoneNumber = "0810000001",
+                    Department = "CS"
+                },
+                new User
+                {
+                    Email = "lecturer2@uni.ac.za",
+                    Password = "123",
+                    Role = "Lecturer",
+                    FullName = "Lecturer Two",
+                    PhoneNumber = "0810000002",
+                    Department = "IT"
+                },
+                new User
+                {
+                    Email = "manager@uni.ac.za",
+                    Password = "123",
+                    Role = "AcademicManager"
+                },
+                new User
+                {
+                    Email = "coordinator@uni.ac.za",
+                    Password = "123",
+                    Role = "ProgrammeCoordinator"
+                },
+                new User
+                {
+                    Email = "hr@uni.ac.za",
+                    Password = "123",
+                    Role = "HR"
+                }
             );
 
+            // Seed initial claims - UPDATED with payment info
             modelBuilder.Entity<Claim>().HasData(
                 new Claim
                 {
@@ -69,7 +101,11 @@ namespace AcademicClaimsPrototype.Data
                     DocumentPath = "/uploads/invigilation.pdf",
                     ProcessedBy = "manager@uni.ac.za",
                     ProcessedAt = DateTime.Now.AddDays(-1),
-                    SubmittedAt = DateTime.UtcNow.AddDays(-2)
+                    SubmittedAt = DateTime.UtcNow.AddDays(-2),
+                    IsPaid = true,
+                    PaidDate = DateTime.Now,
+                    PaidBy = "hr@uni.ac.za",
+                    PaymentReference = "PAY-001"
                 },
                 new Claim
                 {

@@ -8,7 +8,6 @@ namespace AcademicClaimsPrototype.Models
         [Key]
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
-        // Remove [Required] since we set it in controller
         public string LecturerEmail { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Date is required")]
@@ -26,7 +25,6 @@ namespace AcademicClaimsPrototype.Models
         [Required(ErrorMessage = "Description is required")]
         public string Description { get; set; } = string.Empty;
 
-        // Remove [Required] from DocumentPath - we'll handle it manually in controller
         public string DocumentPath { get; set; } = string.Empty;
 
         [Required]
@@ -37,6 +35,12 @@ namespace AcademicClaimsPrototype.Models
         public string? ProcessedBy { get; set; }
         public DateTime? ProcessedAt { get; set; }
         public string? RejectionReason { get; set; }
+
+        // Payment properties
+        public bool IsPaid { get; set; } = false;
+        public DateTime? PaidDate { get; set; }
+        public string? PaidBy { get; set; }
+        public string? PaymentReference { get; set; }
 
         [NotMapped]
         public double Amount => Hours * Rate;

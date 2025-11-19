@@ -1,6 +1,6 @@
 ﻿using AcademicClaimsPrototype.Models;
-using AcademicClaimsPrototype.Filters;
 using AcademicClaimsPrototype.Data;
+using AcademicClaimsPrototype.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.IO;

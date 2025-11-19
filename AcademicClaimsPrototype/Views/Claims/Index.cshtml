@@ -168,6 +168,33 @@
         .page-logout-btn:hover {
             background: #c82333;
         }
+
+    .payment-status {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: bold;
+        margin-top: 5px;
+    }
+
+    .payment-paid {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .payment-pending {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+
+    .payment-info {
+        font-size: 0.8em;
+        color: #6c757d;
+        margin-top: 3px;
+    }
 </style>
 
 <div>
@@ -231,6 +258,26 @@
                 <td>R @claim.Amount.ToString("N2")</td>
                 <td>
                     <span class="status @claim.Status">@claim.Status</span>
+
+                    <!-- Payment Status for Approved Claims -->
+                    @if (claim.Status == AcademicClaimsPrototype.Models.ClaimStatus.Approved)
+                    {
+                        <div class="payment-status @(claim.IsPaid ? "payment-paid" : "payment-pending")">
+                            @(claim.IsPaid ? "✓ PAID" : "⏳ AWAITING PAYMENT")
+                        </div>
+
+                        @if (claim.IsPaid)
+                        {
+                            <div class="payment-info">
+                                Paid: @claim.PaidDate?.ToString("yyyy-MM-dd")
+                                @if (!string.IsNullOrEmpty(claim.PaymentReference))
+                                {
+                                    <br />
+                                    <text>Ref: @claim.PaymentReference</text>
+                                }
+                            </div>
+                        }
+                    }
                 </td>
                 <td>
                     @if (!string.IsNullOrEmpty(claim.DocumentPath))
@@ -243,7 +290,7 @@
                     }
                 </td>
                 <td>
-                    @if (claim.Status == ClaimStatus.Pending)
+                    @if (claim.Status == AcademicClaimsPrototype.Models.ClaimStatus.Pending)
                     {
                         <a href="@Url.Action("Edit", new { id = claim.Id })" class="edit-btn">Edit</a>
                     }
@@ -256,3 +303,12 @@
         }
     </tbody>
 </table>
+
+@if (!Model.Any())
+{
+    <div style="text-align: center; padding: 40px; color: #6c757d;">
+        <h3>No Claims Submitted Yet</h3>
+        <p>You haven't submitted any claims. Click the "Submit New Claim" button to get started.</p>
+        <a class="submit-btn" asp-action="Create" style="float: none; display: inline-block; margin-top: 20px;">Submit Your First Claim</a>
+    </div>
+}

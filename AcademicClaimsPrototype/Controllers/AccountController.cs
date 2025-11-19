@@ -3,8 +3,6 @@ using AcademicClaimsPrototype.Data;
 using AcademicClaimsPrototype.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace AcademicClaimsPrototype.Controllers
@@ -19,10 +17,7 @@ namespace AcademicClaimsPrototype.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login()
-        {
-            return View();
-        }
+        public IActionResult Login() => View();
 
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
@@ -41,20 +36,18 @@ namespace AcademicClaimsPrototype.Controllers
 
             if (user.Role == "Lecturer")
                 return RedirectToAction("Index", "Claims");
+            else if (user.Role == "HR")
+                return RedirectToAction("Index", "HR");
             else
                 return RedirectToAction("Index", "Management");
         }
 
         [HttpGet]
-        public IActionResult Register()
-        {
-            return View();
-        }
+        public IActionResult Register() => View();
 
         [HttpPost]
         public async Task<IActionResult> Register(string email, string password, string role)
         {
-            // Check if user exists using case-insensitive comparison
             var existingUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
 
@@ -74,7 +67,6 @@ namespace AcademicClaimsPrototype.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            ViewBag.Message = "Registration successful! Please login.";
             return RedirectToAction("Login");
         }
 
@@ -83,6 +75,26 @@ namespace AcademicClaimsPrototype.Controllers
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
+        }
+
+        // Temporary method to create HR user if needed
+        [HttpGet]
+        public async Task<IActionResult> CreateHRUser()
+        {
+            var existingHR = await _context.Users.FirstOrDefaultAsync(u => u.Email == "hr@uni.ac.za");
+            if (existingHR == null)
+            {
+                var hrUser = new User
+                {
+                    Email = "hr@uni.ac.za",
+                    Password = "123",
+                    Role = "HR"
+                };
+                _context.Users.Add(hrUser);
+                await _context.SaveChangesAsync();
+                return Content("HR user created successfully. Email: hr@uni.ac.za, Password: 123");
+            }
+            return Content("HR user already exists. Email: hr@uni.ac.za, Password: 123");
         }
     }
 }

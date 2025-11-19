@@ -1,1 +1,1 @@
-https://github.com/Khayaguzu/AcademicClaimsPrototype.git
+https://github.com/Khayaguzu/AcademicClaimsPrototype/tree/PART-2

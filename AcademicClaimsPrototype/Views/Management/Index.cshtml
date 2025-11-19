@@ -1,8 +1,10 @@
 ﻿@model IEnumerable<AcademicClaimsPrototype.Models.Claim>
-
 @{
     ViewData["Title"] = "Manage Claims";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var pendingClaims = ViewBag.PendingClaims as IEnumerable<AcademicClaimsPrototype.Models.Claim>;
+    var approvedClaims = ViewBag.ApprovedClaims as IEnumerable<AcademicClaimsPrototype.Models.Claim>;
+    var rejectedClaims = ViewBag.RejectedClaims as IEnumerable<AcademicClaimsPrototype.Models.Claim>;
 }
 
 <style>
@@ -40,12 +42,87 @@
             background: #c82333;
         }
 
+    .stats-container {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin: 20px 0;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        min-width: 150px;
+    }
+
+    .stat-number {
+        font-size: 2em;
+        font-weight: bold;
+        display: block;
+    }
+
+    .stat-pending {
+        color: #856404;
+        border-top: 4px solid #ffc107;
+    }
+
+    .stat-approved {
+        color: #155724;
+        border-top: 4px solid #28a745;
+    }
+
+    .stat-rejected {
+        color: #721c24;
+        border-top: 4px solid #dc3545;
+    }
+
+    .status-section {
+        margin: 30px 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .section-header {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 2px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .section-title {
+        font-size: 1.3em;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .section-count {
+        background: #6c757d;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.9em;
+    }
+
+    .pending-header {
+        border-left: 5px solid #ffc107;
+    }
+
+    .approved-header {
+        border-left: 5px solid #28a745;
+    }
+
+    .rejected-header {
+        border-left: 5px solid #dc3545;
+    }
+
     .table-wrapper {
-        width: 95%;
-        margin: 30px auto;
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         overflow-x: auto;
     }
 
@@ -133,6 +210,7 @@
         padding: 6px;
         border-radius: 6px;
         border: 1px solid #ccc;
+        width: 200px;
     }
 
     .view-doc-btn {
@@ -159,6 +237,13 @@
         font-weight: bold;
         color: #2c3e50;
     }
+
+    .no-claims {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+        font-style: italic;
+    }
 </style>
 
 <div class="logout-btn-container">
@@ -167,68 +252,232 @@
 
 <h2>Manage Lecturer Claims</h2>
 
-<div class="table-wrapper">
-    <table>
-        <thead>
-            <tr>
-                <th>Lecturer</th>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Hours</th>
-                <th>Rate</th>
-                <th>Amount</th>
-                <th>Document</th>
-                <th>Status</th>
-                <th>Rejection Reason</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var claim in Model)
-            {
-                <tr>
-                    <td>@claim.LecturerEmail</td>
-                    <td>@claim.Date.ToShortDateString()</td>
-                    <td>@claim.Description</td>
-                    <td>@claim.Hours</td>
-                    <td>R @claim.Rate.ToString("N2")</td>
-                    <td class="amount">R @claim.Amount.ToString("N2")</td>
-                    <td>
-                        @if (!string.IsNullOrEmpty(claim.DocumentPath))
-                        {
-                            <a href="@Url.Content(claim.DocumentPath)" target="_blank" class="view-doc-btn">View Document</a>
-                        }
-                        else
-                        {
-                            <span class="no-doc">No document</span>
-                        }
-                    </td>
-                    <td>
-                        <span class="status @claim.Status">@claim.Status</span>
-                    </td>
-                    <td>
-                        @if (claim.Status == ClaimStatus.Rejected)
-                        {
-                            @claim.RejectionReason
-                        }
-                    </td>
-                    <td>
-                        @if (claim.Status == ClaimStatus.Pending)
-                        {
-                            <form asp-action="Approve" method="post" style="display:inline">
-                                <input type="hidden" name="id" value="@claim.Id" />
-                                <button type="submit" class="action-btn approve-btn">Approve</button>
-                            </form>
+@if (TempData["Success"] != null)
+{
+    <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin: 10px 20px;">
+        @TempData["Success"]
+    </div>
+}
 
-                            <form asp-action="Reject" method="post" style="display:inline">
-                                <input type="hidden" name="id" value="@claim.Id" />
-                                <input type="text" name="reason" placeholder="Reason" class="reason-input" required />
-                                <button type="submit" class="action-btn reject-btn">Reject</button>
-                            </form>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+@if (TempData["Error"] != null)
+{
+    <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin: 10px 20px;">
+        @TempData["Error"]
+    </div>
+}
+
+<!-- Statistics Cards -->
+<div class="stats-container">
+    <div class="stat-card stat-pending">
+        <span class="stat-number">@ViewBag.TotalPending</span>
+        <span>Pending Claims</span>
+    </div>
+    <div class="stat-card stat-approved">
+        <span class="stat-number">@ViewBag.TotalApproved</span>
+        <span>Approved Claims</span>
+    </div>
+    <div class="stat-card stat-rejected">
+        <span class="stat-number">@ViewBag.TotalRejected</span>
+        <span>Rejected Claims</span>
+    </div>
+</div>
+
+<!-- Pending Claims Section -->
+<div class="status-section">
+    <div class="section-header pending-header">
+        <div class="section-title">Pending Claims - Awaiting Review</div>
+        <div class="section-count">@(pendingClaims?.Count() ?? 0) claims</div>
+    </div>
+    <div class="table-wrapper">
+        @if (pendingClaims != null && pendingClaims.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lecturer</th>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Hours</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Document</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var claim in pendingClaims)
+                    {
+                        <tr>
+                            <td>@claim.LecturerEmail</td>
+                            <td>@claim.Date.ToShortDateString()</td>
+                            <td>@claim.Description</td>
+                            <td>@claim.Hours</td>
+                            <td>R @claim.Rate.ToString("N2")</td>
+                            <td class="amount">R @claim.Amount.ToString("N2")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(claim.DocumentPath))
+                                {
+                                    <a href="@Url.Action("ViewDocument", new { documentPath = claim.DocumentPath })" target="_blank" class="view-doc-btn">View Document</a>
+                                }
+                                else
+                                {
+                                    <span class="no-doc">No document</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="status @claim.Status">@claim.Status</span>
+                            </td>
+                            <td>
+                                <form asp-action="Approve" method="post" style="display:inline">
+                                    <input type="hidden" name="id" value="@claim.Id" />
+                                    <button type="submit" class="action-btn approve-btn">Approve</button>
+                                </form>
+
+                                <form asp-action="Reject" method="post" style="display:inline">
+                                    <input type="hidden" name="id" value="@claim.Id" />
+                                    <input type="text" name="reason" placeholder="Rejection reason" class="reason-input" required />
+                                    <button type="submit" class="action-btn reject-btn">Reject</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="no-claims">
+                <p>No pending claims awaiting review.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Approved Claims Section -->
+<div class="status-section">
+    <div class="section-header approved-header">
+        <div class="section-title">Approved Claims</div>
+        <div class="section-count">@(approvedClaims?.Count() ?? 0) claims</div>
+    </div>
+    <div class="table-wrapper">
+        @if (approvedClaims != null && approvedClaims.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lecturer</th>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Hours</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Document</th>
+                        <th>Status</th>
+                        <th>Approved By</th>
+                        <th>Approved On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var claim in approvedClaims)
+                    {
+                        <tr>
+                            <td>@claim.LecturerEmail</td>
+                            <td>@claim.Date.ToShortDateString()</td>
+                            <td>@claim.Description</td>
+                            <td>@claim.Hours</td>
+                            <td>R @claim.Rate.ToString("N2")</td>
+                            <td class="amount">R @claim.Amount.ToString("N2")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(claim.DocumentPath))
+                                {
+                                    <a href="@Url.Action("ViewDocument", new { documentPath = claim.DocumentPath })" target="_blank" class="view-doc-btn">View Document</a>
+                                }
+                                else
+                                {
+                                    <span class="no-doc">No document</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="status @claim.Status">@claim.Status</span>
+                            </td>
+                            <td>@claim.ProcessedBy</td>
+                            <td>@claim.ProcessedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="no-claims">
+                <p>No approved claims.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Rejected Claims Section -->
+<div class="status-section">
+    <div class="section-header rejected-header">
+        <div class="section-title">Rejected Claims</div>
+        <div class="section-count">@(rejectedClaims?.Count() ?? 0) claims</div>
+    </div>
+    <div class="table-wrapper">
+        @if (rejectedClaims != null && rejectedClaims.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lecturer</th>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Hours</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Document</th>
+                        <th>Status</th>
+                        <th>Rejection Reason</th>
+                        <th>Rejected By</th>
+                        <th>Rejected On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var claim in rejectedClaims)
+                    {
+                        <tr>
+                            <td>@claim.LecturerEmail</td>
+                            <td>@claim.Date.ToShortDateString()</td>
+                            <td>@claim.Description</td>
+                            <td>@claim.Hours</td>
+                            <td>R @claim.Rate.ToString("N2")</td>
+                            <td class="amount">R @claim.Amount.ToString("N2")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(claim.DocumentPath))
+                                {
+                                    <a href="@Url.Action("ViewDocument", new { documentPath = claim.DocumentPath })" target="_blank" class="view-doc-btn">View Document</a>
+                                }
+                                else
+                                {
+                                    <span class="no-doc">No document</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="status @claim.Status">@claim.Status</span>
+                            </td>
+                            <td>@claim.RejectionReason</td>
+                            <td>@claim.ProcessedBy</td>
+                            <td>@claim.ProcessedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="no-claims">
+                <p>No rejected claims.</p>
+            </div>
+        }
+    </div>
 </div>
